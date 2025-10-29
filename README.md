@@ -27,13 +27,13 @@ A minimal, self-hostable scaffold for a farmers market operations toolkit. It bu
 
 1. Review the default environment configuration in `app/.env` (copy of the example file) and adjust it for your deployment.
 
-2. Build and start the stack:
+2. Build and start the stack using the helper script (falls back to copying `.env.example` if `app/.env` is missing):
 
    ```bash
-   docker compose up --build
+   ./scripts/bootstrap.sh
    ```
 
-   The FastAPI app is exposed internally on port 8000 and served publicly through Caddy with automatic HTTPS (when `DOMAIN` is not `localhost`).
+   The script verifies that Docker and the Compose plugin are available before running `docker compose up --build`. The FastAPI app is exposed internally on port 8000 and served publicly through Caddy with automatic HTTPS (when `DOMAIN` is not `localhost`).
 
 3. Visit the app in your browser at `https://<DOMAIN>` (or `http://localhost` for local development).
 
