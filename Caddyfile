@@ -1,0 +1,18 @@
+{
+    email {env.EMAIL}
+    # Optional: logging
+    # debug
+}
+
+# If DOMAIN is set to localhost, use HTTP only for local dev.
+(http://localhost) {
+    @localhost host localhost
+    handle @localhost {
+        reverse_proxy app:8000
+    }
+}
+
+# Production: automatic HTTPS for your real domain (e.g., marketops.example.com)
+{env.DOMAIN} {
+    reverse_proxy app:8000
+}
