@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  app:
+    build: ./app
+    container_name: marketops_app
+    env_file:
+      - ./app/.env
+    volumes:
+      - app_data:/data
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: marketops_caddy
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+      - EMAIL=${EMAIL:-admin@example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  app_data:
