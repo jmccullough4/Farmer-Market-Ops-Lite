@@ -25,11 +25,7 @@ A minimal, self-hostable scaffold for a farmers market operations toolkit. It bu
 
 ## Quick start
 
-1. Copy the example environment file and adjust it for your deployment:
-
-   ```bash
-   cp app/.env.example app/.env
-   ```
+1. Review the default environment configuration in `app/.env` (copy of the example file) and adjust it for your deployment.
 
 2. Build and start the stack:
 
