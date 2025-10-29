@@ -1,0 +1,15 @@
+{
+    email {$EMAIL}
+    # Optional: logging
+    # debug
+}
+
+# Local development over HTTP when DOMAIN is unset or "localhost".
+http://localhost {
+    reverse_proxy app:8000
+}
+
+# Production: automatic HTTPS for your real domain (e.g., marketops.example.com)
+{$DOMAIN} {
+    reverse_proxy app:8000
+}
