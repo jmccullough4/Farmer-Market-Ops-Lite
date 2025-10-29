@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <title>3Strands MarketOps Lite</title>
+  <style>
+    body { background: #0b0b0c; color: #e8e8ea; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; margin: 0; }
+    header { padding: 16px 20px; border-bottom: 1px solid #1c1c20; display:flex; justify-content:space-between; align-items:center; }
+    h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+    main { padding: 20px; max-width: 900px; margin: 0 auto; }
+    .card { background:#121214; border:1px solid #1e1e22; border-radius:16px; padding: 16px 16px; margin-bottom: 16px; }
+    input, button { background:#0e0e10; color:#e8e8ea; border:1px solid #2a2a30; border-radius:10px; padding:10px 12px; }
+    button { cursor:pointer; }
+    .row { display:flex; gap:12px; flex-wrap: wrap; }
+    label { font-size: 12px; color:#a8a8ad; display:block; margin-bottom:4px; }
+    .muted { color:#9b9ba1; font-size:12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>3Strands MarketOps Lite</h1>
+    <div class="muted" id="status">offline-ready</div>
+  </header>
+  <main>
+    <div class="card">
+      <h3>Quick add product</h3>
+      <div class="row">
+        <div>
+          <label>Name</label>
+          <input id="p_name" placeholder="Ground Beef 1lb">
+        </div>
+        <div>
+          <label>SKU</label>
+          <input id="p_sku" placeholder="GB-1LB">
+        </div>
+        <div>
+          <label>Unit</label>
+          <input id="p_unit" value="ea">
+        </div>
+        <div>
+          <label>Price</label>
+          <input id="p_price" value="8.00">
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <button onclick="createProduct()">Save</button>
+      </div>
+      <div class="muted" id="msg"></div>
+    </div>
+
+    <div class="card">
+      <h3>Products</h3>
+      <pre id="products" class="muted">[empty]</pre>
+    </div>
+  </main>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+
+  const api = (path) => `${location.origin}${path}`;
+
+  async function createProduct() {
+    const body = {
+      name: document.getElementById('p_name').value,
+      sku: document.getElementById('p_sku').value,
+      unit_type: document.getElementById('p_unit').value,
+      price_per_unit: parseFloat(document.getElementById('p_price').value || '0')
+    };
+    try {
+      const r = await fetch(api('/api/products'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error('failed');
+      document.getElementById('msg').textContent = 'Saved ✅';
+      loadProducts();
+    } catch (e) {
+      document.getElementById('msg').textContent = 'Queued (offline) ⏳ — will sync';
+      // Store request for background sync
+      queueRequest('/api/products', 'POST', body);
+    }
+  }
+
+  async function loadProducts() {
+    try {
+      const r = await fetch(api('/api/products'));
+      const data = await r.json();
+      document.getElementById('products').textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+      document.getElementById('products').textContent = '[offline]';
+    }
+  }
+
+  // Simple IndexedDB queue for offline POSTs
+  let db;
+  const req = indexedDB.open('marketops', 1);
+  req.onupgradeneeded = (ev) => {
+    db = ev.target.result;
+    db.createObjectStore('queue', { keyPath: 'id', autoIncrement: true });
+  };
+  req.onsuccess = (ev) => { db = ev.target.result; loadProducts(); };
+  req.onerror = () => { loadProducts(); };
+
+  function queueRequest(url, method, body) {
+    const tx = db.transaction('queue', 'readwrite');
+    tx.objectStore('queue').add({ url, method, body, ts: Date.now() });
+  }
+
+  async function flushQueue() {
+    const tx = db.transaction('queue', 'readwrite');
+    const store = tx.objectStore('queue');
+    const all = store.getAll();
+    all.onsuccess = async () => {
+      for (const item of all.result) {
+        try {
+          const r = await fetch(api(item.url), {
+            method: item.method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item.body)
+          });
+          if (r.ok) { store.delete(item.id); }
+        } catch {}
+      }
+    };
+  }
+
+  window.addEventListener('online', flushQueue);
+</script>
+</body>
+</html>
