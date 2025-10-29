@@ -33,7 +33,9 @@ A minimal, self-hostable scaffold for a farmers market operations toolkit. It bu
    ./scripts/bootstrap.sh
    ```
 
-   The script verifies that Docker and the Compose plugin are available before running `docker compose up --build`. The FastAPI app is exposed internally on port 8000 and served publicly through Caddy with automatic HTTPS (when `DOMAIN` is not `localhost`).
+   The script verifies that Docker and the Compose plugin are available, attempts to install them automatically on Debian/Ubuntu systems (using `apt-get` with sudo when necessary), and then runs `docker compose up --build`. The FastAPI app is exposed internally on port 8000 and served publicly through Caddy with automatic HTTPS (when `DOMAIN` is not `localhost`).
+
+   > **Note:** If Docker is installed during this process, you may need to log out and back in (or re-run the script with sudo) so your user gains access to the `docker` group.
 
 3. Visit the app in your browser at `https://<DOMAIN>` (or `http://localhost` for local development).
 
